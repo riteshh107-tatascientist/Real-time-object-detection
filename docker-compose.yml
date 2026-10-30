@@ -1,16 +1,19 @@
 services:
   visionpro:
     build: .
-    ports: ["5000:5000"]
+    ports:
+      - "5000:10000"
+    env_file:
+      - .env
     environment:
-      SECRET_KEY: change-me-to-a-long-random-string
-      ADMIN_USER: ritesh
-      ADMIN_PASS: vision@123
+      PORT: 10000
+      DB_PATH: /app/data/visionpro.db
+      VIDEO_DIR: /app/videos
+      SNAPSHOT_DIR: /app/snapshots
+      RECORDING_DIR: /app/recordings
     volumes:
       - ./data:/app/data
       - ./recordings:/app/recordings
       - ./snapshots:/app/snapshots
-      - ./videos:/app/videos        # put demo videos here, then use source: videos/demo.mp4
-    # Linux webcam: uncomment the next two lines, then use source 0
-    # devices: ["/dev/video0:/dev/video0"]
+      - ./videos:/app/videos
     restart: unless-stopped

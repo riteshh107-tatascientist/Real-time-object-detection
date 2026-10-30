@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: visionpro
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_PATH
+        value: /app/data/visionpro.db
+      - key: VIDEO_DIR
+        value: /app/videos
+      - key: SNAPSHOT_DIR
+        value: /app/snapshots
+      - key: RECORDING_DIR
+        value: /app/recordings
+      - key: MAX_UPLOAD_MB
+        value: "500"

@@ -1,0 +1,53 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>History | VisionPro</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--a:#19e3b1;--b:#6c8cff;--w:#ffb020;--mut:#8a98b8;--line:rgba(120,150,200,.16);--p:rgba(20,28,44,.72)}
+*{box-sizing:border-box;margin:0}body{background:#080c14;color:#e8eefc;font:14px Inter,sans-serif;min-height:100vh}
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;background:radial-gradient(40% 40% at 20% 15%,rgba(108,140,255,.2),transparent),radial-gradient(35% 35% at 85% 85%,rgba(25,227,177,.14),transparent)}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 28px;border-bottom:1px solid var(--line)}
+h1,h2,.num{font-family:Sora,sans-serif}h2{font-size:18px}
+a.pill,button{padding:8px 14px;border:1px solid var(--line);border-radius:99px;background:var(--p);color:inherit;text-decoration:none;font:600 13px Inter;cursor:pointer;transition:.2s}
+a.pill:hover,button:hover{border-color:var(--a)}
+main{max-width:1200px;margin:auto;padding:20px 28px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}
+.card{background:var(--p);border:1px solid var(--line);border-radius:16px;padding:16px}
+.num{font-size:28px;font-weight:800}.card span{color:var(--mut);font-size:12px}
+.bar{display:flex;gap:10px;margin:16px 0;flex-wrap:wrap;align-items:center}
+select{background:#0c1220;color:#e8eefc;border:1px solid var(--line);border-radius:10px;padding:8px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:500;font-size:12px;position:sticky;top:0;background:#101828}
+.wrap{max-height:430px;overflow:auto}.new{color:var(--b)}.in{color:var(--a)}.out{color:var(--w)}
+@media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}}
+</style></head><body>
+<header><h2>VisionPro &nbsp;<span style="color:var(--mut);font-weight:400">Detection history</span></h2>
+<div style="display:flex;gap:10px"><a class="pill" href="/">Live view</a><form method="post" action="/logout" style="margin:0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="pill">Log out</button></form></div></header>
+<main>
+<div class="stats">
+ <div class="card"><div class="num" id="a">0</div><span>Objects tracked</span></div>
+ <div class="card"><div class="num" id="b">0</div><span>Crossed in</span></div>
+ <div class="card"><div class="num" id="c">0</div><span>Crossed out</span></div>
+ <div class="card"><div class="num" id="d">0</div><span>Peak objects in frame</span></div>
+ <div class="card"><div class="num" id="e">0</div><span>Average FPS</span></div>
+</div>
+<div class="card"><div style="height:200px"><canvas id="ch"></canvas></div></div>
+<div class="bar">
+ <select id="kind" onchange="load()"><option value="">All events</option><option value="new">New objects</option><option value="in">Crossed in</option><option value="out">Crossed out</option><option value="info">System</option></select>
+ <select id="min" onchange="load()"><option value="60">Last hour</option><option value="360">Last 6 hours</option><option value="1440">Last 24 hours</option></select>
+ <span style="flex:1"></span>
+ <button onclick="location='/export/events.csv?kind='+kind.value">Export events CSV</button>
+ <button onclick="location='/export/samples.csv'">Export stats CSV</button>
+</div>
+<div class="card wrap"><table><thead><tr><th>Time</th><th>Type</th><th>Event</th></tr></thead><tbody id="rows"></tbody></table></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const ch=new Chart($('ch'),{type:'line',data:{labels:[],datasets:[{label:'Objects in frame',data:[],borderColor:'#19e3b1',backgroundColor:'rgba(25,227,177,.12)',fill:true,tension:.35,pointRadius:0}]},
+options:{maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8a98b8'}}},scales:{x:{ticks:{color:'#8a98b8',maxTicksLimit:8},grid:{display:false}},y:{beginAtZero:true,ticks:{color:'#8a98b8',precision:0},grid:{color:'rgba(120,150,200,.1)'}}}}});
+async function load(){const d=await (await fetch(`/api/history?kind=${kind.value}&minutes=${min.value}`)).json();const s=d.summary;
+$('a').textContent=s.new;$('b').textContent=s.inn;$('c').textContent=s.out;$('d').textContent=s.peak;$('e').textContent=s.avg_fps;
+ch.data.labels=d.samples.map(x=>new Date(x.ts*1000).toLocaleTimeString());ch.data.datasets[0].data=d.samples.map(x=>x.objects);ch.update();
+$('rows').innerHTML=d.events.length?d.events.map(e=>`<tr><td>${new Date(e.ts*1000).toLocaleString()}</td><td class="${e.kind}">${e.kind}</td><td>${String(e.msg).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}</td></tr>`).join(''):'<tr><td colspan=3 style="color:var(--mut)">No events yet. Start detecting on the live view.</td></tr>'}
+load();setInterval(load,5000);
+</script></body></html>

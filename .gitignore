@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+data/*
+!data/.keep
+videos/*
+!videos/.keep
+recordings/*
+!recordings/.keep
+snapshots/*
+!snapshots/.keep
+*.log

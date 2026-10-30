@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VisionPro | Real-Time AI Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#080c14;--panel:rgba(20,28,44,.72);--line:rgba(120,150,200,.16);--tx:#e8eefc;--mut:#8a98b8;--a:#19e3b1;--b:#6c8cff;--w:#ffb020;--r:#ff5a78}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--tx);font:14px Inter,sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;background:radial-gradient(40% 40% at 20% 20%,rgba(108,140,255,.22),transparent),radial-gradient(35% 35% at 85% 10%,rgba(25,227,177,.16),transparent),radial-gradient(40% 40% at 70% 90%,rgba(255,90,120,.10),transparent);animation:drift 18s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate(3%,4%) scale(1.08)}}
+h1,h2,.num{font-family:Sora,sans-serif}
+/* splash */
+#splash{position:fixed;inset:0;z-index:99;background:#05080f;display:grid;place-items:center;text-align:center;transition:opacity .8s,visibility .8s}
+#splash.hide{opacity:0;visibility:hidden}
+#splash h1{font-size:clamp(34px,7vw,72px);font-weight:800;letter-spacing:-1px;background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;color:transparent;animation:rise 1s .2s both}
+#splash p{color:var(--mut);margin-top:12px;animation:rise 1s .6s both;font-size:16px}
+#splash .scan{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--a),transparent);box-shadow:0 0 24px var(--a);animation:scan 2.2s ease-in-out infinite}
+@keyframes scan{0%{top:10%}50%{top:90%}100%{top:10%}}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+/* layout */
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--line);backdrop-filter:blur(14px);position:sticky;top:0;z-index:5;background:rgba(8,12,20,.6)}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--a),var(--b));display:grid;place-items:center;color:#06101a;font:800 17px Sora}
+.brand h2{font-size:18px}.brand small{color:var(--mut);display:block;font-size:12px}
+.pill{display:flex;align-items:center;gap:8px;padding:7px 14px;border:1px solid var(--line);border-radius:99px;background:var(--panel);font-weight:500}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--mut)}
+.live .dot{background:var(--a);animation:pulse 1.4s infinite}.warn .dot{background:var(--r)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(25,227,177,.7)}100%{box-shadow:0 0 0 10px transparent}}
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;padding:18px 28px;max-width:1600px;margin:auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;backdrop-filter:blur(14px)}
+.card h3{font:600 13px Sora;color:var(--mut);margin-bottom:12px}
+.feed{padding:0;overflow:hidden;position:relative;aspect-ratio:16/9;background:#000}
+.feed img{width:100%;height:100%;object-fit:contain;display:block}
+.badge{position:absolute;top:12px;left:12px;display:flex;gap:8px}
+.badge span{background:rgba(5,8,15,.7);border:1px solid var(--line);padding:5px 10px;border-radius:8px;font-size:12px;backdrop-filter:blur(8px)}
+.rec{color:var(--r);display:none}.rec.on{display:inline-block;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.3}}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}
+.stat{position:relative;overflow:hidden}
+.stat .num{font-size:32px;font-weight:800;line-height:1.1}
+.stat span{color:var(--mut);font-size:12px}
+.stat::after{content:"";position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--c,var(--a));opacity:.8}
+.row2{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:18px}
+.side{display:flex;flex-direction:column;gap:14px}
+label{display:block;color:var(--mut);font-size:12px;margin:10px 0 6px}
+select,input[type=text]{width:100%;background:#0c1220;color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:9px 10px;font:inherit}
+input[type=range]{width:100%;accent-color:var(--a)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+button{background:#111a2c;color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:10px;font:600 13px Inter;cursor:pointer;transition:.2s}
+button:hover{border-color:var(--a);transform:translateY(-1px)}button:active{transform:scale(.97)}
+button.pri{background:linear-gradient(135deg,var(--a),var(--b));color:#06101a;border:0}
+.tg{display:flex;justify-content:space-between;align-items:center;padding:7px 0}
+.sw{width:42px;height:24px;border-radius:99px;background:#1b2740;position:relative;cursor:pointer;transition:.25s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.25s}
+.sw.on{background:var(--a)}.sw.on::after{transform:translateX(18px)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;max-height:110px;overflow:auto}
+.chip{padding:4px 10px;border-radius:99px;border:1px solid var(--line);font-size:12px;cursor:pointer;color:var(--mut);transition:.2s}
+.chip.on{background:rgba(25,227,177,.15);border-color:var(--a);color:var(--a)}
+.bar{margin:8px 0}.bar div{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.bar i{display:block;height:6px;border-radius:9px;background:linear-gradient(90deg,var(--a),var(--b));transition:width .5s}
+#log{max-height:170px;overflow:auto;font-size:12px}
+#log p{padding:5px 0;border-bottom:1px solid var(--line);animation:rise .4s}
+#log b{color:var(--mut);margin-right:8px;font-weight:500}
+.new{color:var(--b)}.in{color:var(--a)}.out{color:var(--w)}.warn{color:var(--r)}
+footer{text-align:center;color:var(--mut);padding:20px;font-size:12px}
+footer b{color:var(--tx)}
+@media(max-width:1000px){main{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body>
+<div id="splash"><div class="scan"></div><div><h1>VisionPro</h1><p>Real-Time AI Vision Studio &nbsp;|&nbsp; Ritesh Kumar Singh, Founder &amp; CEO</p></div></div>
+
+<header>
+ <div class="brand"><div class="logo">V</div><div><h2>VisionPro</h2><small>Founded by Ritesh Kumar Singh</small></div></div>
+ <div style="display:flex;gap:10px;align-items:center"><div class="pill" id="status"><i class="dot"></i><span id="stxt">starting</span></div>
+  <a class="pill" href="/history" style="color:inherit;text-decoration:none">History</a>
+  <form method="post" action="/logout" style="margin:0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="pill" style="cursor:pointer;color:inherit" title="Signed in as {{ user }}">Log out</button></form></div>
+</header>
+
+<main>
+ <section>
+  <div class="card feed">
+   <img src="/video_feed" alt="Live detection feed">
+   <div class="badge"><span id="fps">0 FPS</span><span id="lat">0 ms</span><span class="rec" id="rec">REC</span></div>
+  </div>
+  <div class="stats">
+   <div class="card stat"><div class="num" id="s-obj">0</div><span>Objects in frame</span></div>
+   <div class="card stat" style="--c:var(--b)"><div class="num" id="s-uni">0</div><span>Unique tracked</span></div>
+   <div class="card stat" style="--c:var(--a)"><div class="num" id="s-in">0</div><span>Crossed in</span></div>
+   <div class="card stat" style="--c:var(--w)"><div class="num" id="s-out">0</div><span>Crossed out</span></div>
+  </div>
+  <div class="row2">
+   <div class="card"><h3>Objects over time</h3><div style="height:190px"><canvas id="chart"></canvas></div></div>
+   <div class="card"><h3>Class breakdown</h3><div id="bars"><span style="color:var(--mut)">Waiting for detections...</span></div></div>
+  </div>
+ </section>
+
+ <aside class="side">
+  <div class="card"><h3>Controls</h3>
+   <label>Model</label>
+   <select id="model" onchange="cfg({model:this.value})"><option value="yolo11n.pt">YOLO11 Nano (fastest)</option><option value="yolo11s.pt">YOLO11 Small</option><option value="yolo11m.pt">YOLO11 Medium (accurate)</option></select>
+   <label>Source: camera index, video path or RTSP URL</label>
+   <input type="text" id="src" value="0" onchange="cfg({source:this.value})">
+   <label>Upload a video (MP4, AVI, MOV, MKV, WEBM)</label>
+   <input type="file" id="videoFile" accept="video/mp4,video/avi,video/quicktime,video/x-matroska,video/webm,video/x-m4v" style="width:100%;color:var(--mut);font-size:12px">
+   <button type="button" style="width:100%;margin-top:8px" onclick="uploadVideo()">Upload &amp; use video</button>
+   <small id="uploadStatus" style="display:block;color:var(--mut);margin-top:7px">Cloud deployments cannot access your laptop webcam directly. Upload a sample video instead.</small>
+   <label>Confidence: <b id="cv">40%</b></label>
+   <input type="range" id="conf" min="10" max="90" value="40" oninput="cv.textContent=this.value+'%'" onchange="cfg({conf:this.value/100})">
+   <div class="tg">Motion trails<div class="sw on" id="t-trails" onclick="tog('trails')"></div></div>
+   <div class="tg">Counting line<div class="sw on" id="t-line" onclick="tog('line')"></div></div>
+   <div class="tg">Heatmap<div class="sw" id="t-heatmap" onclick="tog('heatmap')"></div></div>
+   <div class="btns">
+    <button onclick="tog('paused')" id="pause">Pause (Space)</button>
+    <button onclick="location='/api/snapshot'">Snapshot (S)</button>
+    <button onclick="rec()" class="pri" id="recbtn">Record (R)</button>
+    <button onclick="cfg({reset:true})">Reset counts</button>
+   </div>
+  </div>
+  <div class="card"><h3>Filter classes (none = all)</h3><div class="chips" id="chips"></div></div>
+  <div class="card"><h3>Event log</h3><div id="log"></div></div>
+ </aside>
+</main>
+<footer>&copy; 2026 <b>VisionPro</b> by <b>Ritesh Kumar Singh</b>, Owner &amp; CEO</footer>
+
+<script>
+const $=id=>document.getElementById(id);let C={},sel=new Set();const CSRF={{ csrf_token()|tojson }};const esc=v=>String(v).replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
+setTimeout(()=>$('splash').classList.add('hide'),2600);
+const cfg=b=>fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':CSRF},body:JSON.stringify(b)});
+function tog(k){cfg({[k]:!C[k]});C[k]=!C[k];sync()}
+function sync(){['trails','line','heatmap'].forEach(k=>$('t-'+k).classList.toggle('on',!!C[k]));$('pause').textContent=C.paused?'Resume (Space)':'Pause (Space)'}
+async function rec(){const r=await (await fetch('/api/record',{method:'POST',headers:{'X-CSRF-Token':CSRF}})).json();$('recbtn').textContent=r.recording?'Stop recording':'Record (R)'}
+async function uploadVideo(){const file=$('videoFile').files[0];if(!file){$('uploadStatus').textContent='Choose a video file first.';return}const data=new FormData();data.append('video',file);$('uploadStatus').textContent='Uploading video…';try{const r=await fetch('/api/upload-video',{method:'POST',headers:{'X-CSRF-Token':CSRF},body:data});const d=await r.json();if(!r.ok)throw new Error(d.error||'Upload failed');$('src').value=d.source;$('uploadStatus').textContent=d.message+' File: '+d.filename}catch(e){$('uploadStatus').textContent=e.message}}
+function count(el,to){const from=+el.dataset.v||0;if(from===to)return;el.dataset.v=to;const t0=performance.now();
+ (function f(t){const p=Math.min((t-t0)/450,1);el.textContent=Math.round(from+(to-from)*p);if(p<1)requestAnimationFrame(f)})(t0)}
+const chart=new Chart($('chart'),{type:'line',data:{labels:Array(60).fill(''),datasets:[{data:[],borderColor:'#19e3b1',backgroundColor:'rgba(25,227,177,.15)',fill:true,tension:.4,pointRadius:0,borderWidth:2}]},
+ options:{maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{beginAtZero:true,ticks:{color:'#8a98b8',precision:0},grid:{color:'rgba(120,150,200,.1)'}}}}});
+fetch('/api/meta').then(r=>r.json()).then(m=>{$('chips').innerHTML=m.names.map((n,i)=>`<span class="chip" data-i="${i}">${n}</span>`).join('');
+ document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{const i=+c.dataset.i;sel.has(i)?sel.delete(i):sel.add(i);c.classList.toggle('on');cfg({classes:[...sel]})})});
+async function tick(){try{const d=await (await fetch('/api/stats')).json();const s=d.stats;C=d.cfg;sync();
+ count($('s-obj'),s.objects);count($('s-uni'),s.unique);count($('s-in'),s.in_count);count($('s-out'),s.out_count);
+ $('fps').textContent=s.fps+' FPS';$('lat').textContent=s.latency+' ms';$('rec').classList.toggle('on',s.recording);
+ $('stxt').textContent=s.status;$('status').className='pill '+(s.status==='live'?'live':(s.status==='error'||s.status==='no source')?'warn':'');
+ chart.data.datasets[0].data=d.history;chart.update();
+ const e=Object.entries(s.per_class).sort((a,b)=>b[1]-a[1]),mx=Math.max(1,...e.map(x=>x[1]));
+ if(e.length)$('bars').innerHTML=e.slice(0,7).map(([k,v])=>`<div class="bar"><div><span>${k}</span><b>${v}</b></div><i style="width:${v/mx*100}%"></i></div>`).join('');
+ $('log').innerHTML=d.events.map(x=>`<p><b>${esc(x.t)}</b><span class="${esc(x.kind)}">${esc(x.msg)}</span></p>`).join('')}catch(e){}}
+setInterval(tick,500);
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.code==='Space'){e.preventDefault();tog('paused')}if(e.key==='s')location='/api/snapshot';if(e.key==='r')rec()});
+</script></body></html>

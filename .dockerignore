@@ -1,7 +1,16 @@
+.git
+.gitignore
 venv
+.venv
 __pycache__
-*.pyc
+*.py[cod]
+.env
+.env.*
+!.env.example
 data
 recordings
 snapshots
+videos/*
+!videos/.keep
 *.zip
+.pytest_cache

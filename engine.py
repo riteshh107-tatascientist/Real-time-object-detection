@@ -1,12 +1,16 @@
 """VisionPro detection engine: YOLO + ByteTrack, line counting, trails, heatmap, recording."""
 import os, time, threading
+from pathlib import Path
 from collections import defaultdict, deque
 import cv2
 import numpy as np
 from ultralytics import YOLO
 
-os.makedirs("snapshots", exist_ok=True)
-os.makedirs("recordings", exist_ok=True)
+BASE_DIR = Path(__file__).resolve().parent
+SNAPSHOT_DIR = Path(os.environ.get("SNAPSHOT_DIR", BASE_DIR / "snapshots")).resolve()
+RECORDING_DIR = Path(os.environ.get("RECORDING_DIR", BASE_DIR / "recordings")).resolve()
+SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+RECORDING_DIR.mkdir(parents=True, exist_ok=True)
 
 PALETTE = [(255, 170, 0), (0, 220, 150), (255, 90, 120), (120, 140, 255),
            (0, 200, 255), (200, 120, 255), (90, 255, 120), (255, 210, 80)]
@@ -14,7 +18,7 @@ PALETTE = [(255, 170, 0), (0, 220, 150), (255, 90, 120), (120, 140, 255),
 
 class Engine:
     def __init__(self):
-        self.cfg = dict(model="yolo11n.pt", conf=0.40, source="0", classes=[],
+        self.cfg = dict(model="yolo11n.pt", conf=0.40, source=os.environ.get("VIDEO_SOURCE", "0"), classes=[],
                         trails=True, line=True, heatmap=False, paused=False)
         self.model, self.model_name = None, None
         self.frame_jpg = None
@@ -36,7 +40,7 @@ class Engine:
     def set_config(self, new):
         with self.lock:
             for k, v in new.items():
-                if k in self.cfg:
+                if k in self.cfg and k != "reset":
                     if k == "source" and str(v) != str(self.cfg[k]):
                         self.reload_src = True
                     self.cfg[k] = v
@@ -54,8 +58,9 @@ class Engine:
     def snapshot(self):
         if self.raw is None:
             return None
-        path = f"snapshots/snap_{int(time.time())}.jpg"
-        cv2.imwrite(path, self.raw)
+        path = str(SNAPSHOT_DIR / f"snap_{int(time.time())}.jpg")
+        if not cv2.imwrite(path, self.raw):
+            return None
         self.log("Snapshot saved", "info")
         return path
 
@@ -65,9 +70,13 @@ class Engine:
             self.stats["recording"] = False; self.log("Recording stopped", "info")
         elif self.raw is not None:
             h, w = self.raw.shape[:2]
-            path = f"recordings/rec_{int(time.time())}.mp4"
-            self.writer = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*"mp4v"), 20, (w, h))
-            self.stats["recording"] = True; self.log("Recording started", "info")
+            path = str(RECORDING_DIR / f"rec_{int(time.time())}.mp4")
+            writer = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*"mp4v"), 20, (w, h))
+            if not writer.isOpened():
+                writer.release(); self.log("Could not start video recording (codec unavailable)", "warn")
+                return False
+            self.writer = writer
+            self.stats["recording"] = True; self.log(f"Recording started: {Path(path).name}", "info")
         return self.stats["recording"]
 
     def log(self, msg, kind="info"):
@@ -79,6 +88,11 @@ class Engine:
     # ---------- main loop ----------
     def open_source(self):
         src = str(self.cfg["source"]).strip()
+        if not src.isdigit() and not src.lower().startswith(("rtsp://", "rtsps://", "http://", "https://")):
+            candidate = Path(src)
+            if not candidate.is_absolute():
+                candidate = (BASE_DIR / candidate).resolve()
+            src = str(candidate)
         cap = cv2.VideoCapture(int(src) if src.isdigit() else src)
         self.stats["source"] = src
         self.stats["status"] = "live" if cap.isOpened() else "no source"
@@ -102,11 +116,14 @@ class Engine:
                     self.stats["status"] = "paused"; time.sleep(0.1); continue
                 ok, frame = cap.read()
                 if not ok:
-                    if str(self.cfg["source"]).isdigit():
-                        self.stats["status"] = "no source"; time.sleep(0.5)
+                    if cap is None or not cap.isOpened() or str(self.cfg["source"]).isdigit():
+                        self.stats["status"] = "no source"
+                        time.sleep(1.0)
                         self.reload_src = True
                     else:
-                        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # loop video files
+                        # Loop local video files when they reach the end.
+                        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                        time.sleep(0.02)
                     continue
                 self.stats["status"] = "live"
                 frame = cv2.resize(frame, (960, int(frame.shape[0] * 960 / frame.shape[1])))

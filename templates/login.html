@@ -1,0 +1,30 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in | VisionPro</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--a:#19e3b1;--b:#6c8cff;--mut:#8a98b8;--line:rgba(120,150,200,.18)}
+*{box-sizing:border-box;margin:0}
+body{min-height:100vh;display:grid;place-items:center;background:#080c14;color:#e8eefc;font:14px Inter,sans-serif;overflow:hidden}
+body::before{content:"";position:fixed;inset:-20%;background:radial-gradient(40% 40% at 25% 25%,rgba(108,140,255,.25),transparent),radial-gradient(35% 35% at 80% 80%,rgba(25,227,177,.18),transparent);animation:d 16s ease-in-out infinite alternate}
+@keyframes d{to{transform:translate(4%,3%) scale(1.1)}}
+.scan{position:fixed;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--a),transparent);box-shadow:0 0 22px var(--a);animation:s 5s ease-in-out infinite;opacity:.5}
+@keyframes s{0%,100%{top:8%}50%{top:92%}}
+form{position:relative;width:min(400px,92vw);padding:34px;border-radius:20px;background:rgba(20,28,44,.75);border:1px solid var(--line);backdrop-filter:blur(18px);animation:r .8s both}
+@keyframes r{from{opacity:0;transform:translateY(20px)}}
+.logo{width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,var(--a),var(--b));display:grid;place-items:center;color:#06101a;font:800 21px Sora;margin-bottom:18px}
+h1{font:800 26px Sora}p{color:var(--mut);margin:6px 0 22px}
+label{display:block;color:var(--mut);font-size:12px;margin:14px 0 6px}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0c1220;color:#e8eefc;font:inherit}
+input:focus{outline:2px solid var(--a);border-color:transparent}
+button{width:100%;margin-top:22px;padding:13px;border:0;border-radius:10px;background:linear-gradient(135deg,var(--a),var(--b));color:#06101a;font:700 14px Inter;cursor:pointer;transition:.2s}
+button:hover{transform:translateY(-1px)}
+.err{background:rgba(255,90,120,.12);color:#ff8aa0;padding:10px;border-radius:10px;margin-bottom:6px;animation:sh .4s}
+@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+small{display:block;text-align:center;margin-top:20px;color:var(--mut)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body><div class="scan"></div>
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="logo">V</div><h1>VisionPro</h1><p>Sign in to the AI vision studio.</p>
+{% if err %}<div class="err">{{ err }}</div>{% endif %}
+<label for="u">Username</label><input id="u" name="username" autocomplete="username" required autofocus>
+<label for="p">Password</label><input id="p" name="password" type="password" autocomplete="current-password" required>
+<button>Sign in</button><small>Built by Ritesh Kumar Singh, Founder &amp; CEO</small></form></body></html>
